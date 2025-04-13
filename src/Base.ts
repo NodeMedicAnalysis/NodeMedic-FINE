@@ -172,8 +172,8 @@ export class Instrumentation {
                 case Function.prototype.apply.name:
                 case Function.prototype.bind.name:
                     // Call, apply, and bind are external 
-                    // only if the base is external
-                    isExternal = IM.isExternalModule(base);
+                    // only if the base is external or native function
+                    isExternal = (typeof base === "function" && F.isNativeFunction(base)) || IM.isExternalModule(base);
                     break;
                 default:
                     break;
