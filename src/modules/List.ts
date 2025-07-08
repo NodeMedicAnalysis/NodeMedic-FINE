@@ -1,7 +1,7 @@
-import { modulePolicy, nativeMethodTaintPolicyDispatch, NativeMethodTaintPolicy } from './PolicyInterface';
+import { modulePolicy, externalMethodTaintPolicyDispatch, ExternalMethodTaintPolicy } from './PolicyInterface';
 import { State, taintEntry, ID, setMt, setPath, getTc } from '../State';
 import { Wrapped, Unwrapped, unwrap, wrap } from '../Wrapper';
-import { F, Either, NativeFunction } from '../Flib';
+import { F, Either, NativeFunction, ExternalFunction } from '../Flib';
 import { getTaintEntry, getValue, setPropTaint, getPropTaint, oid,
          initPropMap, isTainted, anyPropertiesTainted } from '../Taint';
 import { SafeMap } from '../DataStructures';
@@ -11,8 +11,8 @@ import { getObjectPolicy } from './PolicyManager';
 
 export const ListPolicyImprecise: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {},
-    nativeMethodTaintPolicies: {
+    externalMethodWrapperPolicies: {},
+    externalMethodTaintPolicies: {
         'push': arrayPush,
     },
 
@@ -75,14 +75,14 @@ export const ListPolicyImprecise: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
     ): Either<State, Error> {
         F.assert(getValue(s, base) instanceof Array, `Base ${base} is not an array`);
-        return F.matchMaybe(nativeMethodTaintPolicyDispatch(this.nativeMethodTaintPolicies, f), {
-            Just: (policy: NativeMethodTaintPolicy) => policy(s, f, base, args, result),
+        return F.matchMaybe(externalMethodTaintPolicyDispatch(this.externalMethodTaintPolicies, f), {
+            Just: (policy: ExternalMethodTaintPolicy) => policy(s, f as NativeFunction, base, args, result),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().TCall(s, f, base, args, result)
         });
@@ -91,8 +91,8 @@ export const ListPolicyImprecise: modulePolicy = {
 
 export const ListPolicyPrecise: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {},
-    nativeMethodTaintPolicies: {
+    externalMethodWrapperPolicies: {},
+    externalMethodTaintPolicies: {
         'join': arrayJoin,
         'map': arrayMap,
         'reduce': arrayReduce,
@@ -154,13 +154,13 @@ export const ListPolicyPrecise: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
     ): Either<State, Error> {
-        return F.matchMaybe(nativeMethodTaintPolicyDispatch(this.nativeMethodTaintPolicies, f), {
-            Just: (policy: NativeMethodTaintPolicy) => policy(s, f, base, args, result),
+        return F.matchMaybe(externalMethodTaintPolicyDispatch(this.externalMethodTaintPolicies, f), {
+            Just: (policy: ExternalMethodTaintPolicy) => policy(s, f as NativeFunction, base, args, result),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().TCall(s, f, base, args, result)
         });

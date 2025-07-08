@@ -1,8 +1,8 @@
-import { modulePolicy, nativeMethodTaintPolicyDispatch, NativeMethodTaintPolicy } from './PolicyInterface';
+import { modulePolicy, externalMethodTaintPolicyDispatch, ExternalMethodTaintPolicy } from './PolicyInterface';
 import { State, taintEntry, PropMap, ID, setMt, setPath, getTc } from '../State';
 import { newPathNode, PathNode, joinTEPaths, emptyPathNode } from '../TaintPaths';
 import { Wrapped, Unwrapped } from '../Wrapper';
-import { F, Either, Literal, NativeFunction } from '../Flib';
+import { F, Either, Literal, NativeFunction, ExternalFunction } from '../Flib';
 import { getTaintEntry, getValue, oid, initPropMap,
          setPropTaint, getPropTaint, anyPropertiesTainted } from '../Taint';
 import { SafeMap } from '../DataStructures';
@@ -12,9 +12,9 @@ import { getObjectPolicy, policyPrecisionMap } from './PolicyManager';
 
 export const StringPolicyPrecise: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {},
+    externalMethodWrapperPolicies: {},
 
-    nativeMethodTaintPolicies: {
+    externalMethodTaintPolicies: {
         "blink": stringBlink,
         "substring": stringSubstring,
         "concat": stringConcat,
@@ -126,7 +126,7 @@ export const StringPolicyPrecise: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
@@ -161,8 +161,8 @@ export const StringPolicyPrecise: modulePolicy = {
                 // Fall back to module policies or imprecise policy
             }
         }
-        return F.matchMaybe(nativeMethodTaintPolicyDispatch(this.nativeMethodTaintPolicies, f), {
-            Just: (policy: NativeMethodTaintPolicy) => policy(s, f, base, args, result),
+        return F.matchMaybe(externalMethodTaintPolicyDispatch(this.externalMethodTaintPolicies, f), {
+            Just: (policy: ExternalMethodTaintPolicy) => policy(s, f as NativeFunction, base, args, result),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().TCall(s, f, base, args, result)
         });

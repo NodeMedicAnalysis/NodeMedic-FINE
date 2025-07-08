@@ -1,8 +1,8 @@
-import { modulePolicy, nativeMethodWrapperPolicyDispatch, NativeMethodWrapPrePolicy,
-         NativeMethodWrapPostPolicy, WrapperPolicyType } from './PolicyInterface';
+import { modulePolicy, externalMethodWrapperPolicyDispatch, ExternalMethodWrapPrePolicy,
+         ExternalMethodWrapPostPolicy, WrapperPolicyType } from './PolicyInterface';
 import { State, taintEntry, ID, setMt, setIDS, taintTree, setTaintTreeMap, getTaintTreeMap, getTc } from '../State';
 import { Wrapped, Unwrapped, unwrap, wrap, getID } from '../Wrapper';
-import { F, Either, Maybe, NativeFunction } from '../Flib';
+import { F, Either, Maybe, NativeFunction, ExternalFunction } from '../Flib';
 import { getTaintEntry, oid, initPropMap, allPropertiesTainted, getValue, anyPropertiesTainted } from '../Taint';
 import { SafeMap } from '../DataStructures';
 import { PathNode, newPathNode, joinTEPaths, describePath, emptyPathNode } from '../TaintPaths';
@@ -64,14 +64,14 @@ function wrapObject(
 
 export const ObjectPolicy: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {
+    externalMethodWrapperPolicies: {
         'defineProperty': {
             pre: F.Just(definePropertyWrapPre),
             post: F.Nothing(),
         },
     },
 
-    nativeMethodTaintPolicies: {},
+    externalMethodTaintPolicies: {},
 
     isTainted(s: State, v: Wrapped) {
         const tE = F.eitherThrow(getTaintEntry(s, v));
@@ -98,8 +98,8 @@ export const ObjectPolicy: modulePolicy = {
     },
 
     WInvokeFunPre(s: State, f: Function, base: Wrapped, args: Wrapped[]): [State, any, any[]] {
-        return F.matchMaybe(nativeMethodWrapperPolicyDispatch(this.nativeMethodWrapperPolicies, f, WrapperPolicyType.pre), {
-            Just: (policy: NativeMethodWrapPrePolicy) => F.eitherThrow(policy(s, f, base, args)),
+        return F.matchMaybe(externalMethodWrapperPolicyDispatch(this.externalMethodWrapperPolicies, f, WrapperPolicyType.pre), {
+            Just: (policy: ExternalMethodWrapPrePolicy) => F.eitherThrow(policy(s, f, base, args)),
             // Fall back to ObjectPolicy
             Nothing: () => {
                 // Unwrap the arguments
@@ -124,8 +124,8 @@ export const ObjectPolicy: modulePolicy = {
     },
 
     WInvokeFun(s: State, f: Function, base: any, args: any[], result: any): [State, any, any[], any] {
-        return F.matchMaybe(nativeMethodWrapperPolicyDispatch(this.nativeMethodWrapperPolicies, f, WrapperPolicyType.post), {
-            Just: (policy: NativeMethodWrapPostPolicy) => F.eitherThrow(policy(s, f, base, args, result)),
+        return F.matchMaybe(externalMethodWrapperPolicyDispatch(this.externalMethodWrapperPolicies, f, WrapperPolicyType.post), {
+            Just: (policy: ExternalMethodWrapPostPolicy) => F.eitherThrow(policy(s, f, base, args, result)),
             // Fall back to ObjectPolicy
             Nothing: () => {
                 // Wrap the arguments
@@ -256,7 +256,7 @@ export const ObjectPolicy: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
@@ -275,14 +275,14 @@ export const ObjectPolicy: modulePolicy = {
 
 export const ObjectPolicyImprecise: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {
+    externalMethodWrapperPolicies: {
         'defineProperty': {
             pre: F.Just(definePropertyWrapPre),
             post: F.Nothing(),
         },
     },
 
-    nativeMethodTaintPolicies: {},
+    externalMethodTaintPolicies: {},
 
     isTainted(s: State, v: Wrapped) {
         const tE = F.eitherThrow(getTaintEntry(s, v));
@@ -413,7 +413,7 @@ export const ObjectPolicyImprecise: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped

@@ -16,6 +16,7 @@ import { inspect } from 'util';
 export type Primitive = number | string | boolean | symbol;
 export type Literal = Primitive | Function;
 export type NativeFunction = Function;
+export type ExternalFunction = Function;
 
 export interface Maybe<A> {
     value: A | symbol,

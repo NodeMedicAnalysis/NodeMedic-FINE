@@ -1,9 +1,9 @@
-import { modulePolicy, NativeMethodTaintPolicy, nativeMethodTaintPolicyDispatch, 
-         nativeMethodWrapperPolicyDispatch, NativeMethodWrapPrePolicy, 
-         WrapperPolicyType, NativeMethodWrapPostPolicy } from './PolicyInterface';
+import { modulePolicy, ExternalMethodTaintPolicy, externalMethodTaintPolicyDispatch, 
+         externalMethodWrapperPolicyDispatch, ExternalMethodWrapPrePolicy, 
+         WrapperPolicyType, ExternalMethodWrapPostPolicy } from './PolicyInterface';
 import { State, taintEntry, ID, setMt, setPath, getTc } from '../State';
 import { Wrapped, Unwrapped, unwrap, wrap } from '../Wrapper';
-import { F, Either, NativeFunction } from '../Flib';
+import { F, Either, NativeFunction, ExternalFunction } from '../Flib';
 import { getTaintEntry, getValue, setPropTaint, getPropTaint, oid,
          initPropMap, isTainted, anyPropertiesTainted } from '../Taint';
 import { SafeMap } from '../DataStructures';
@@ -13,8 +13,8 @@ import { getObjectPolicy } from './PolicyManager';
 
 export const SetPolicyImprecise: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {},
-    nativeMethodTaintPolicies: {
+    externalMethodWrapperPolicies: {},
+    externalMethodTaintPolicies: {
         'add': setAddImprecisePolicy,
         'values': setValuesImprecisePolicy,
     },
@@ -81,14 +81,14 @@ export const SetPolicyImprecise: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
     ): Either<State, Error> {
         F.assert(getValue(s, base) instanceof Set, `Base ${base} is not an set`);
-        return F.matchMaybe(nativeMethodTaintPolicyDispatch(this.nativeMethodTaintPolicies, f), {
-            Just: (policy: NativeMethodTaintPolicy) => policy(s, f, base, args, result),
+        return F.matchMaybe(externalMethodTaintPolicyDispatch(this.externalMethodTaintPolicies, f), {
+            Just: (policy: ExternalMethodTaintPolicy) => policy(s, f as NativeFunction, base, args, result),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().TCall(s, f, base, args, result)
         });
@@ -161,14 +161,14 @@ function setValuesImprecisePolicy(
 
 export const SetPolicyPrecise: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {
+    externalMethodWrapperPolicies: {
         'add': {
             pre: F.Just(addWrapPre),
             post: F.Nothing(),
         },
     },
 
-    nativeMethodTaintPolicies: {
+    externalMethodTaintPolicies: {
         'add': setAddPrecisePolicy,
         'values': setValuesPrecisePolicy,
     },
@@ -208,16 +208,16 @@ export const SetPolicyPrecise: modulePolicy = {
     },
 
     WInvokeFunPre(s: State, f: Wrapped, base: Wrapped, args: Wrapped[]): [State, any, any[]] {
-        return F.matchMaybe(nativeMethodWrapperPolicyDispatch(this.nativeMethodWrapperPolicies, (f as Function), WrapperPolicyType.pre), {
-            Just: (policy: NativeMethodWrapPrePolicy) => F.eitherThrow(policy(s, (f as Function), base, args)),
+        return F.matchMaybe(externalMethodWrapperPolicyDispatch(this.externalMethodWrapperPolicies, f as Function, WrapperPolicyType.pre), {
+            Just: (policy: ExternalMethodWrapPrePolicy) => F.eitherThrow(policy(s, f as Function, base, args)),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().WInvokeFunPre(s, f, base, args),
         });
     },
 
     WInvokeFun(s: State, f: any, base: any, args: any[], result: any): [State, any, any[], any] {
-        return F.matchMaybe(nativeMethodWrapperPolicyDispatch(this.nativeMethodWrapperPolicies, f, WrapperPolicyType.post), {
-            Just: (policy: NativeMethodWrapPostPolicy) => F.eitherThrow(policy(s, f, base, args, result)),
+        return F.matchMaybe(externalMethodWrapperPolicyDispatch(this.externalMethodWrapperPolicies, f, WrapperPolicyType.post), {
+            Just: (policy: ExternalMethodWrapPostPolicy) => F.eitherThrow(policy(s, f, base, args, result)),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().WInvokeFun(s, f, base, args, result),
         });
@@ -241,14 +241,14 @@ export const SetPolicyPrecise: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
     ): Either<State, Error> {
         F.assert(getValue(s, base) instanceof Set, `Base ${base} is not an set`);
-        return F.matchMaybe(nativeMethodTaintPolicyDispatch(this.nativeMethodTaintPolicies, f), {
-            Just: (policy: NativeMethodTaintPolicy) => policy(s, f, base, args, result),
+        return F.matchMaybe(externalMethodTaintPolicyDispatch(this.externalMethodTaintPolicies, f), {
+            Just: (policy: ExternalMethodTaintPolicy) => policy(s, f as NativeFunction, base, args, result),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().TCall(s, f, base, args, result)
         });

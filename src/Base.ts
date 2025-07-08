@@ -1,5 +1,5 @@
 import * as underscore from 'underscore';
-import { F, Literal, NativeFunction } from './Flib';
+import { F, Literal, ExternalFunction } from './Flib';
 import { State, describeState, Context, initState, setC, IID, 
          setTc, createTc, getTc, createTcFromSourceLocation } from './State';
 import { WLiteral, WGetFieldPre, WGetField, WInvokeFunPre,
@@ -275,10 +275,10 @@ export class Instrumentation {
         let baseP: Wrapped = res[1];
         let argsP: Wrapped[] = res[2];
         let resultP: Wrapped = res[3];
-        if (isNative) {
-            var s3 = F.eitherThrow(TCall(s2, fP as NativeFunction, baseP, argsP, resultP, isNative));
+        if (isExternal) {
+            var s3 = F.eitherThrow(TCall(s2, fP as ExternalFunction, baseP, argsP, resultP, isExternal));
         } else {
-            var s3 = F.eitherThrow(TCall(s2, fP as Function, baseP, argsP, resultP, isNative));
+            var s3 = F.eitherThrow(TCall(s2, fP as Function, baseP, argsP, resultP, isExternal));
         }
         let s4 = setC(s3, Context.Unset);
         this.s = s4;

@@ -1,13 +1,13 @@
-import { modulePolicy, NativeMethodTaintPolicy, nativeMethodTaintPolicyDispatch, nativeMethodWrapperPolicyDispatch, NativeMethodWrapPrePolicy, WrapperPolicyType } from './PolicyInterface';
+import { modulePolicy, ExternalMethodTaintPolicy, externalMethodTaintPolicyDispatch, externalMethodWrapperPolicyDispatch, ExternalMethodWrapPrePolicy, WrapperPolicyType } from './PolicyInterface';
 import { State } from '../State';
 import { Wrapped, Unwrapped } from '../Wrapper';
-import { F, Either, NativeFunction } from '../Flib';
+import { F, Either, ExternalFunction } from '../Flib';
 import { getObjectPolicy } from './PolicyManager';
 
 
 export const LodashPolicy: modulePolicy = {
 
-    nativeMethodWrapperPolicies: {
+    externalMethodWrapperPolicies: {
         'each': {
             pre: F.Just(eachWrapPre),
             post: F.Nothing(),
@@ -18,7 +18,7 @@ export const LodashPolicy: modulePolicy = {
         },
     },
 
-    nativeMethodTaintPolicies: {},
+    externalMethodTaintPolicies: {},
 
     // Not used
     isTainted(s: State, v: Wrapped) { return true },
@@ -40,8 +40,8 @@ export const LodashPolicy: modulePolicy = {
     },
 
     WInvokeFunPre(s: State, f: Wrapped, base: Wrapped, args: Wrapped[]): [State, any, any[]] {
-        return F.matchMaybe(nativeMethodWrapperPolicyDispatch(this.nativeMethodWrapperPolicies, (f as Function), WrapperPolicyType.pre), {
-            Just: (policy: NativeMethodWrapPrePolicy) => F.eitherThrow(policy(s, (f as Function), base, args)),
+        return F.matchMaybe(externalMethodWrapperPolicyDispatch(this.externalMethodWrapperPolicies, f as Function, WrapperPolicyType.pre), {
+            Just: (policy: ExternalMethodWrapPrePolicy) => F.eitherThrow(policy(s, f as Function, base, args)),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().WInvokeFunPre(s, f, base, args),
         });
@@ -69,18 +69,19 @@ export const LodashPolicy: modulePolicy = {
 
     TCall(
         s: State, 
-        f: NativeFunction, 
+        f: ExternalFunction, 
         base: Wrapped, 
         args: Wrapped[], 
         result: Wrapped
     ): Either<State, Error> {
-        return F.matchMaybe(nativeMethodTaintPolicyDispatch(this.nativeMethodTaintPolicies, f), {
-            Just: (policy: NativeMethodTaintPolicy) => policy(s, f, base, args, result),
+        return F.matchMaybe(externalMethodTaintPolicyDispatch(this.externalMethodTaintPolicies, f), {
+            Just: (policy: ExternalMethodTaintPolicy) => policy(s, f, base, args, result),
             // Fall back to Object policy
             Nothing: () => getObjectPolicy().TCall(s, f, base, args, result)
         });
     }
 };
+
 
 
 function eachWrapPre( 
@@ -89,11 +90,5 @@ function eachWrapPre(
     base: Wrapped,
     args: Wrapped[],
 ): Either<[State, any, any[]], Error> {
-    if (F.isNativeFunction(f)) {
-        return F.Left(getObjectPolicy().WInvokeFunPre(s, f, base, args));
-    } else {
-        // TODO: Handle external calls here.
-        // Do not unwrap the arguments
-        return F.Left([s, base, args]);
-    }
+    return F.Left(getObjectPolicy().WInvokeFunPre(s, f, base, args));
 }

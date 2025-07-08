@@ -1,11 +1,11 @@
 import { State } from '../State';
 import { Wrapped, Unwrapped } from '../Wrapper';
-import { Either, NativeFunction, Maybe, F } from '../Flib';
+import { Either, ExternalFunction, Maybe, F } from '../Flib';
 
 
 export interface modulePolicy {
-    nativeMethodWrapperPolicies: Object,
-    nativeMethodTaintPolicies: Object,
+    externalMethodWrapperPolicies: Object,
+    externalMethodTaintPolicies: Object,
 
     isTainted(s: State, value: Wrapped): boolean,
 
@@ -29,19 +29,19 @@ export interface modulePolicy {
 
     TUnary(s: State, v1: Wrapped, v2: Wrapped): Either<State, Error>,
 
-    TCall(s: State, f: NativeFunction, base: Wrapped, args: Wrapped[], result: Wrapped): Either<State, Error>,
+    TCall(s: State, f: ExternalFunction, base: Wrapped, args: Wrapped[], result: Wrapped): Either<State, Error>,
 }
 
-export type NativeMethodWrapPrePolicy = (
+export type ExternalMethodWrapPrePolicy = (
     s: State,
-    f: NativeFunction,
+    f: ExternalFunction,
     base: Wrapped,
     args: Wrapped[],
 ) => Either<[State, any, any[]], Error>;
 
-export type NativeMethodWrapPostPolicy = (
+export type ExternalMethodWrapPostPolicy = (
     s: State,
-    f: NativeFunction,
+    f: ExternalFunction,
     base: any,
     args: any[],
     result: any,
@@ -52,17 +52,17 @@ export enum WrapperPolicyType {
     post,
 }
 
-export function nativeMethodWrapperPolicyDispatch(
+export function externalMethodWrapperPolicyDispatch(
     policies: any, 
-    f: NativeFunction,
+    f: ExternalFunction,
     policyType: WrapperPolicyType,
-): Maybe<NativeMethodWrapPrePolicy | NativeMethodWrapPostPolicy> {
+): Maybe<ExternalMethodWrapPrePolicy | ExternalMethodWrapPostPolicy> {
     if (policies.hasOwnProperty(f.name)) {
         // Apply one of our models
         if (policyType == WrapperPolicyType.pre) {
-            return policies[f.name].pre as Maybe<NativeMethodWrapPrePolicy>;
+            return policies[f.name].pre as Maybe<ExternalMethodWrapPrePolicy>;
         } else if (policyType == WrapperPolicyType.post) {
-            return policies[f.name].post as Maybe<NativeMethodWrapPostPolicy>;
+            return policies[f.name].post as Maybe<ExternalMethodWrapPostPolicy>;
         } else {
             F.unreachable(`Unhandled policyType: ${policyType}`);
         }
@@ -71,21 +71,21 @@ export function nativeMethodWrapperPolicyDispatch(
     }
 }
 
-export type NativeMethodTaintPolicy = (
+export type ExternalMethodTaintPolicy = (
     s: State,
-    f: NativeFunction,
+    f: ExternalFunction,
     base: Wrapped,
     args: Wrapped[],
     result: Wrapped,
 ) => Either<State, Error>;
 
-export function nativeMethodTaintPolicyDispatch(
+export function externalMethodTaintPolicyDispatch(
     policies: any, 
-    f: NativeFunction
-): Maybe<NativeMethodTaintPolicy> {
+    f: ExternalFunction
+): Maybe<ExternalMethodTaintPolicy> {
     if (policies.hasOwnProperty(f.name)) {
         // Apply one of our models
-        return F.Just(policies[f.name] as NativeMethodTaintPolicy);
+        return F.Just(policies[f.name] as ExternalMethodTaintPolicy);
     } else {
         return F.Nothing();
     }

@@ -1,4 +1,4 @@
-import { F, Either, Literal, NativeFunction, Maybe } from './Flib';
+import { F, Either, Literal, Maybe, ExternalFunction } from './Flib';
 import { State, ID, PropMap, taintEntry, setMt, setPath, getTc } from './State';
 import { emptyPathNode, newPathNode, describePath, circularReplacer } from './TaintPaths';
 import { Wrapped } from './Wrapper';
@@ -373,14 +373,14 @@ export function TUnary(s: State, v1: Object, v2: Object): Either<State, Error> {
 
 export function TCall(
     s: State,
-    f: NativeFunction, 
+    f: ExternalFunction, 
     base: Object, 
     args: Object[], 
     result: Object, 
-    isNative: boolean
+    isExternal: boolean
 ): Either<State, Error> {
     // We only propagate taint via policies for native fns with a result
-    if (isNative && result !== undefined) {
+    if (isExternal && result !== undefined) {
         let ubase = getValue(s, base);
         return getPolicy(ubase).TCall(s, f, base, args, result);
     } else {
